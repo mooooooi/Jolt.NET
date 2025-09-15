@@ -1,0 +1,6 @@
+[submodule "lib/joltc"]
+	path = lib/joltc
+	url = git@github.com:amerkoleci/joltc.git
+[submodule "lib/JoltPhysics"]
+	path = lib/JoltPhysics
+	url = git@github.com:jrouwe/JoltPhysics.git
