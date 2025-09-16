@@ -24,22 +24,22 @@ jobs:
       uses: lukka/get-cmake@v4.0.2
       
     - name: Configure win-x64
-      run: cd lib/joltc && cmake -S "." -B "build_win_64" -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE:String=Distribution -DCMAKE_INSTALL_PREFIX:String="SDK"
+      run: cd lib/joltc && cmake -S "." -B "build_win_64" -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE:String=Distribution -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
     - name: Build win-x64
       run: cd lib/joltc && cmake --build build_win_64 --config Distribution
 
     - name: Configure win-arm64
-      run: cd lib/joltc && cmake -S "." -B "build_win_arm64" -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_BUILD_TYPE:String=Distribution -DCMAKE_INSTALL_PREFIX:String="SDK"
+      run: cd lib/joltc && cmake -S "." -B "build_win_arm64" -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_BUILD_TYPE:String=Distribution -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
     - name: Build win-arm64
       run: cd lib/joltc && cmake --build build_win_arm64 --config Distribution
       
     - name: Configure win-x64 Debug
-      run: cd lib/joltc && cmake -S "." -B "build_win_64" -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE:String=Debug -DCMAKE_INSTALL_PREFIX:String="SDK"
+      run: cd lib/joltc && cmake -S "." -B "build_win_64" -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE:String=Debug -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
     - name: Build win-x64 Debug
       run: cd lib/joltc && cmake --build build_win_64 --config Debug
 
     - name: Configure win-arm64 Debug
-      run: cd lib/joltc && cmake -S "." -B "build_win_arm64" -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_BUILD_TYPE:String=Debug -DCMAKE_INSTALL_PREFIX:String="SDK"
+      run: cd lib/joltc && cmake -S "." -B "build_win_arm64" -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_BUILD_TYPE:String=Debug -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
     - name: Build win-arm64 Debug
       run: cd lib/joltc && cmake --build build_win_arm64 --config Debug
 
@@ -197,73 +197,74 @@ jobs:
   #       name: libs_linux
   #       path: bin
 
-  # macos:
-  #   runs-on: macos-latest
-  #   steps:
-  #   - uses: actions/checkout@v5
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v5
 
-  #   - name: Get CMake
-  #     uses: lukka/get-cmake@v4.0.2
+    - name: Get CMake
+      uses: lukka/get-cmake@v4.0.2
 
-  #   - name: Configure osx-universal
-  #     run: cmake -S "." -B "build_osx" -G Ninja -DCMAKE_BUILD_TYPE=Distribution -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_INSTALL_PREFIX:String="SDK"
-  #   - name: Build osx-universal
-  #     run: cmake --build build_osx --config Distribution --verbose --parallel
+    - name: Configure osx-universal
+      run: cmake -S "." -B "build_osx" -G Ninja -DCMAKE_BUILD_TYPE=Distribution -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
+    - name: Build osx-universal
+      run: cmake --build build_osx --config Distribution --verbose --parallel
 
-  #   - name: Configure osx-universal Debug
-  #     run: cmake -S "." -B "build_osx" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_INSTALL_PREFIX:String="SDK"
-  #   - name: Build osx-universal Debug
-  #     run: cmake --build build_osx --config Debug --verbose --parallel
+    - name: Configure osx-universal Debug
+      run: cmake -S "." -B "build_osx" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
+    - name: Build osx-universal Debug
+      run: cmake --build build_osx --config Debug --verbose --parallel
 
-  #   # macOS artifacts
-  #   - name: package_osx
-  #     run: |
-  #       mkdir -p bin/osx
-  #       mv build_osx/lib/libjoltc.dylib bin/osx/libjoltc.dylib
-  #       mv build_osx/lib/libjoltcd.dylib bin/osx/libjoltcd.dylib
-  #   - uses: actions/upload-artifact@v4
-  #     with:
-  #       name: libs_osx
-  #       path: bin
+    # macOS artifacts
+    - name: package_osx
+      run: |
+        mkdir -p bin/osx
+        mv build_osx/lib/libjoltc.dylib bin/osx/libjoltc.dylib
+        mv build_osx/lib/libjoltcd.dylib bin/osx/libjoltcd.dylib
+    - uses: actions/upload-artifact@v4
+      with:
+        name: libs_osx
+        path: bin
 
-  # combine:
-  #   name: Combine artifacts
-  #   runs-on: ubuntu-latest
-  #   needs:  [windows, linux, macos]
-  #   steps:
-  #     - name: Download artifacts
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         path: artifacts
+  combine:
+    name: Combine artifacts
+    runs-on: ubuntu-latest
+    # needs:  [windows, linux, macos]
+    needs:  [windows, macos]
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
-  #     - name: Display structure of downloaded files
-  #       run: ls -R
-  #       working-directory: artifacts
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: artifacts
 
-  #     - name: Combine
-  #       run: |
-  #         mkdir jolt_libs
-  #         cp -r artifacts/libs_windows/* jolt_libs
-  #         cp -r artifacts/libs_linux/* jolt_libs
-  #         cp -r artifacts/libs_osx/* jolt_libs
+      - name: Combine
+        run: |
+          mkdir jolt_libs
+          cp -r artifacts/libs_windows/* jolt_libs
+          # cp -r artifacts/libs_linux/* jolt_libs
+          cp -r artifacts/libs_osx/* jolt_libs
 
-  #     - uses: edgarrc/action-7z@v1
-  #       with:
-  #         args: 7z a -t7z jolt_libs.7z ./jolt_libs/
+      - uses: edgarrc/action-7z@v1
+        with:
+          args: 7z a -t7z jolt_libs.7z ./jolt_libs/
 
-  #     - uses: AButler/upload-release-assets@v2.0
-  #       if: github.event_name == 'release' && github.event.action == 'created'
-  #       with:
-  #         files: jolt_libs.zip
-  #         repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: AButler/upload-release-assets@v2.0
+        if: github.event_name == 'release' && github.event.action == 'created'
+        with:
+          files: jolt_libs.zip
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - uses: actions/upload-artifact@v4
-  #       with:
-  #         name: 'Build Artifacts'
-  #         path: jolt_libs.7z
-  #     - uses: geekyeggo/delete-artifact@v5
-  #       with:
-  #         name: |
-  #           libs_windows
-  #           libs_linux
-  #           libs_osx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 'Build Artifacts'
+          path: jolt_libs.7z
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            libs_windows
+            # libs_linux
+            libs_osx
