@@ -206,21 +206,21 @@ jobs:
       uses: lukka/get-cmake@v4.0.2
 
     - name: Configure osx-universal
-      run: cmake -S "." -B "build_osx" -G Ninja -DCMAKE_BUILD_TYPE=Distribution -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
+      run: cd lib/joltc && cmake -S "." -B "build_osx" -G Ninja -DCMAKE_BUILD_TYPE=Distribution -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
     - name: Build osx-universal
-      run: cmake --build build_osx --config Distribution --verbose --parallel
+      run: cd lib/joltc && cmake --build build_osx --config Distribution --verbose --parallel
 
     - name: Configure osx-universal Debug
-      run: cmake -S "." -B "build_osx" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
+      run: cd lib/joltc && cmake -S "." -B "build_osx" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
     - name: Build osx-universal Debug
-      run: cmake --build build_osx --config Debug --verbose --parallel
+      run: cd lib/joltc && cmake --build build_osx --config Debug --verbose --parallel
 
     # macOS artifacts
     - name: package_osx
       run: |
         mkdir -p bin/osx
-        mv build_osx/lib/libjoltc.dylib bin/osx/libjoltc.dylib
-        mv build_osx/lib/libjoltcd.dylib bin/osx/libjoltcd.dylib
+        mv lib/joltc/build_osx/lib/libjoltc.dylib bin/osx/libjoltc.dylib
+        mv lib/joltc/build_osx/lib/libjoltcd.dylib bin/osx/libjoltcd.dylib
     - uses: actions/upload-artifact@v4
       with:
         name: libs_osx
