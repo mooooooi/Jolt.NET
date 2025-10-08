@@ -484,4 +484,5 @@ $RECYCLE.BIN/
 *.swp
 
 build/
+build_*/
 .vscode/
