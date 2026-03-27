@@ -213,9 +213,11 @@ jobs:
       run: cd lib/joltc && cmake --build build_osx --config Distribution --verbose --parallel
 
     - name: Configure osx-universal Debug
-      run: cd lib/joltc && cmake -S "." -B "build_osx" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON
+      run: cd lib/joltc && cmake -S "." -B "build_osx" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_INSTALL_PREFIX:String="SDK" -DCROSS_PLATFORM_DETERMINISTIC=ON -DGENERATE_DEBUG_SYMBOLS=ON
     - name: Build osx-universal Debug
       run: cd lib/joltc && cmake --build build_osx --config Debug --verbose --parallel
+    - name: Generate dSYM for osx Debug
+      run: dsymutil lib/joltc/build_osx/lib/libjoltcd.dylib -o lib/joltc/build_osx/lib/libjoltcd.dylib.dSYM
 
     # macOS artifacts
     - name: package_osx
@@ -223,6 +225,7 @@ jobs:
         mkdir -p bin/osx
         mv lib/joltc/build_osx/lib/libjoltc.dylib bin/osx/libjoltc.dylib
         mv lib/joltc/build_osx/lib/libjoltcd.dylib bin/osx/libjoltcd.dylib
+        mv lib/joltc/build_osx/lib/libjoltcd.dylib.dSYM bin/osx/libjoltcd.dylib.dSYM
     - uses: actions/upload-artifact@v4
       with:
         name: libs_osx
