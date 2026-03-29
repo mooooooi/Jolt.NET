@@ -14,7 +14,7 @@ echo "[Step 1] Running macOS build..."
 bash "$SCRIPT_DIR/build_macos.sh"
 
 # --- Step 2: Deploy to Unity ---
-BUILD_DIR="$ROOT_DIR/lib/joltc/build_osx/lib"
+BUILD_DIR="$ROOT_DIR/lib/joltc/build_osx_Debug/lib"
 
 echo ""
 echo "[Step 2] Deploying Debug files to Unity..."
