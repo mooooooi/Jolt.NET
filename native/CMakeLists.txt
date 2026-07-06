@@ -15,6 +15,10 @@ endif()
 set(CMAKE_CXX_FLAGS_DISTRIBUTION "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "Distribution C++ flags" FORCE)
 set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}" CACHE STRING "Distribution shared linker flags" FORCE)
 
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC runtime library" FORCE)
+endif()
+
 set(JPH_ROOT "${CMAKE_CURRENT_LIST_DIR}/../lib/JoltPhysics")
 
 option(CROSS_PLATFORM_DETERMINISTIC "Enable deterministic Jolt build flags" ON)
