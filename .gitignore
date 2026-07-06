@@ -65,6 +65,9 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 
+# Local reference copy after removing the joltc submodule.
+/lib/joltc/
+
 # Tye
 .tye/
 

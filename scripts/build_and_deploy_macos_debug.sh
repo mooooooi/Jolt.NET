@@ -14,7 +14,7 @@ echo "[Step 1] Running macOS build..."
 bash "$SCRIPT_DIR/build_macos.sh"
 
 # --- Step 2: Deploy to Unity ---
-BUILD_DIR="$ROOT_DIR/lib/joltc/build_osx_Debug/lib"
+BUILD_DIR="$ROOT_DIR/build_osx_Debug/lib"
 
 echo ""
 echo "[Step 2] Deploying Debug files to Unity..."
@@ -23,26 +23,27 @@ echo "  To:   $UNITY_MACOS_DIR"
 
 mkdir -p "$UNITY_MACOS_DIR"
 
-cp -f  "$BUILD_DIR/libjoltcd.dylib"  "$UNITY_MACOS_DIR/libjoltc.dylib"
-rm -rf "$UNITY_MACOS_DIR/libjoltc.dylib.dSYM"
-cp -R  "$BUILD_DIR/libjoltcd.dylib.dSYM" "$UNITY_MACOS_DIR/libjoltc.dylib.dSYM"
+cp -f  "$BUILD_DIR/libjoltcd.dylib"  "$UNITY_MACOS_DIR/libjoltcd.dylib"
+mkdir -p "$UNITY_MACOS_DIR/libjoltcd.dylib.dSYM"
+rsync -a --exclude='*.meta' \
+    "$BUILD_DIR/libjoltcd.dylib.dSYM/" \
+    "$UNITY_MACOS_DIR/libjoltcd.dylib.dSYM/"
 
-echo "  Copied libjoltcd.dylib      -> libjoltc.dylib"
-echo "  Copied libjoltcd.dylib.dSYM -> libjoltc.dylib.dSYM"
+echo "  Copied libjoltcd.dylib      -> libjoltcd.dylib"
+echo "  Copied libjoltcd.dylib.dSYM -> libjoltcd.dylib.dSYM"
 
 # --- Step 3: Clear macOS quarantine & ad-hoc sign ---
 echo ""
 echo "[Step 3] Clearing macOS security restrictions..."
 
-xattr -cr "$UNITY_MACOS_DIR/libjoltc.dylib"
-xattr -cr "$UNITY_MACOS_DIR/libjoltc.dylib.dSYM"
+xattr -cr "$UNITY_MACOS_DIR/libjoltcd.dylib"
+xattr -cr "$UNITY_MACOS_DIR/libjoltcd.dylib.dSYM"
 echo "  Cleared quarantine attributes"
 
-codesign --force --deep --sign - "$UNITY_MACOS_DIR/libjoltc.dylib"
-codesign --force --deep --sign - "$UNITY_MACOS_DIR/libjoltc.dylib.dSYM"
+codesign --force --deep --sign - "$UNITY_MACOS_DIR/libjoltcd.dylib"
 echo "  Ad-hoc signed"
 
 echo ""
 echo "Done! Deployed files:"
-ls -lh "$UNITY_MACOS_DIR/libjoltc.dylib"
-ls -lhd "$UNITY_MACOS_DIR/libjoltc.dylib.dSYM"
+ls -lh "$UNITY_MACOS_DIR/libjoltcd.dylib"
+ls -lhd "$UNITY_MACOS_DIR/libjoltcd.dylib.dSYM"

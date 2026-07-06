@@ -4,7 +4,7 @@ c++17
 compatible-codegen
 strip-enum-member-type-name
 -f
-./lib/joltc/include/joltc.h
+./native/jolt_glue.h
 -m
 UnsafeBindings
 -o
@@ -12,7 +12,7 @@ UnsafeBindings
 -n
 Jolt
 -l
-joltc
+joltcd
 -I
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include
