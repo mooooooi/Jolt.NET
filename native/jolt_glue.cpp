@@ -10,6 +10,15 @@
 #include <Jolt/Physics/Collision/ObjectLayer.h>
 #include <Jolt/Physics/Collision/NarrowPhaseQuery.h>
 #include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Body/BodyID.h>
+#include <Jolt/Physics/Body/BodyInterface.h>
+#include <Jolt/Physics/Body/MotionQuality.h>
+#include <Jolt/Physics/Body/MotionType.h>
+#include <Jolt/Physics/EActivation.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/StateRecorder.h>
 
@@ -141,6 +150,92 @@ namespace
 
         JPH_Init();
     }
+
+    JPH::Vec3 ToVec3(const JPH_Vec3 &value)
+    {
+        return JPH::Vec3(value.x, value.y, value.z);
+    }
+
+    JPH::RVec3 ToRVec3(const JPH_Vec3 &value)
+    {
+        return JPH::RVec3(value.x, value.y, value.z);
+    }
+
+    JPH::Quat ToQuat(const JPH_Quat &value)
+    {
+        return JPH::Quat(value.x, value.y, value.z, value.w);
+    }
+
+    JPH_Vec3 FromVec3(const JPH::Vec3 &value)
+    {
+        return { value.GetX(), value.GetY(), value.GetZ() };
+    }
+
+    JPH_Vec3 FromRVec3(const JPH::RVec3 &value)
+    {
+        return { static_cast<float>(value.GetX()), static_cast<float>(value.GetY()), static_cast<float>(value.GetZ()) };
+    }
+
+    JPH_Quat FromQuat(const JPH::Quat &value)
+    {
+        return { value.GetX(), value.GetY(), value.GetZ(), value.GetW() };
+    }
+
+    JPH::EMotionType ToMotionType(uint8_t value)
+    {
+        switch (static_cast<JPH_MotionType>(value))
+        {
+        case JPH_MotionType_Static:
+            return JPH::EMotionType::Static;
+        case JPH_MotionType_Kinematic:
+            return JPH::EMotionType::Kinematic;
+        case JPH_MotionType_Dynamic:
+        default:
+            return JPH::EMotionType::Dynamic;
+        }
+    }
+
+    JPH::EMotionQuality ToMotionQuality(uint8_t value)
+    {
+        switch (static_cast<JPH_MotionQuality>(value))
+        {
+        case JPH_MotionQuality_LinearCast:
+            return JPH::EMotionQuality::LinearCast;
+        case JPH_MotionQuality_Discrete:
+        default:
+            return JPH::EMotionQuality::Discrete;
+        }
+    }
+
+    JPH::EActivation ToActivation(JPH_Activation value)
+    {
+        return value == JPH_Activation_Activate ? JPH::EActivation::Activate : JPH::EActivation::DontActivate;
+    }
+
+    JPH::BodyID ToBodyID(JPH_BodyID value)
+    {
+        return value == JPH_INVALID_BODY_ID ? JPH::BodyID() : JPH::BodyID(value);
+    }
+
+    JPH_BodyID FromBodyID(const JPH::BodyID &value)
+    {
+        return value.GetIndexAndSequenceNumber();
+    }
+
+    JPH::BodyInterface *ToBodyInterface(JPH_BodyInterface *bodyInterface)
+    {
+        return reinterpret_cast<JPH::BodyInterface *>(bodyInterface);
+    }
+
+    const JPH::BodyInterface *ToBodyInterface(const JPH_BodyInterface *bodyInterface)
+    {
+        return reinterpret_cast<const JPH::BodyInterface *>(bodyInterface);
+    }
+
+    const JPH::Shape *ToShape(const JPH_Shape *shape)
+    {
+        return reinterpret_cast<const JPH::Shape *>(shape);
+    }
 }
 
 struct JPH_PhysicsSystem
@@ -241,6 +336,184 @@ extern "C"
             return nullptr;
 
         return reinterpret_cast<JPH_NarrowPhaseQuery *>(const_cast<JPH::NarrowPhaseQuery *>(&system->physicsSystem.GetNarrowPhaseQueryNoLock()));
+    }
+
+    JPH_Shape *JPH_Shape_CreateSphere(float radius)
+    {
+        if (radius <= 0.0f)
+            return nullptr;
+
+        try
+        {
+            JPH::SphereShapeSettings settings(radius);
+            JPH::ShapeSettings::ShapeResult result = settings.Create();
+            if (result.HasError())
+                return nullptr;
+
+            JPH::RefConst<JPH::Shape> shape = result.Get();
+            shape->AddRef();
+            return reinterpret_cast<JPH_Shape *>(const_cast<JPH::Shape *>(shape.GetPtr()));
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
+    JPH_Shape *JPH_Shape_CreateBox(JPH_Vec3 halfExtent, float convexRadius)
+    {
+        if (halfExtent.x <= 0.0f || halfExtent.y <= 0.0f || halfExtent.z <= 0.0f || convexRadius < 0.0f)
+            return nullptr;
+
+        try
+        {
+            JPH::BoxShapeSettings settings(ToVec3(halfExtent), convexRadius);
+            JPH::ShapeSettings::ShapeResult result = settings.Create();
+            if (result.HasError())
+                return nullptr;
+
+            JPH::RefConst<JPH::Shape> shape = result.Get();
+            shape->AddRef();
+            return reinterpret_cast<JPH_Shape *>(const_cast<JPH::Shape *>(shape.GetPtr()));
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
+    JPH_Shape *JPH_Shape_CreateCapsule(float halfHeightOfCylinder, float radius)
+    {
+        if (halfHeightOfCylinder < 0.0f || radius <= 0.0f)
+            return nullptr;
+
+        try
+        {
+            JPH::CapsuleShapeSettings settings(halfHeightOfCylinder, radius);
+            JPH::ShapeSettings::ShapeResult result = settings.Create();
+            if (result.HasError())
+                return nullptr;
+
+            JPH::RefConst<JPH::Shape> shape = result.Get();
+            shape->AddRef();
+            return reinterpret_cast<JPH_Shape *>(const_cast<JPH::Shape *>(shape.GetPtr()));
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
+    void JPH_Shape_AddRef(const JPH_Shape *shape)
+    {
+        if (shape != nullptr)
+            ToShape(shape)->AddRef();
+    }
+
+    void JPH_Shape_Release(const JPH_Shape *shape)
+    {
+        if (shape != nullptr)
+            ToShape(shape)->Release();
+    }
+
+    JPH_BodyID JPH_BodyInterface_CreateAndAddBody(JPH_BodyInterface *bodyInterface, const JPH_BodyCreationSettings *settings, JPH_Activation activation)
+    {
+        if (bodyInterface == nullptr || settings == nullptr || settings->shape == nullptr)
+            return JPH_INVALID_BODY_ID;
+
+        try
+        {
+            JPH::BodyCreationSettings nativeSettings(
+                ToShape(settings->shape),
+                ToRVec3(settings->position),
+                ToQuat(settings->rotation),
+                ToMotionType(settings->motionType),
+                JPH::ObjectLayer(settings->objectLayer));
+
+            nativeSettings.mLinearVelocity = ToVec3(settings->linearVelocity);
+            nativeSettings.mAngularVelocity = ToVec3(settings->angularVelocity);
+            nativeSettings.mUserData = settings->userData;
+            nativeSettings.mMotionQuality = ToMotionQuality(settings->motionQuality);
+            nativeSettings.mIsSensor = settings->isSensor != 0;
+            nativeSettings.mAllowSleeping = settings->allowSleeping != 0;
+            nativeSettings.mLinearDamping = settings->linearDamping;
+            nativeSettings.mAngularDamping = settings->angularDamping;
+            nativeSettings.mMaxLinearVelocity = settings->maxLinearVelocity;
+            nativeSettings.mMaxAngularVelocity = settings->maxAngularVelocity;
+            nativeSettings.mGravityFactor = settings->gravityFactor;
+
+            JPH::BodyID bodyID = ToBodyInterface(bodyInterface)->CreateAndAddBody(nativeSettings, ToActivation(activation));
+            return FromBodyID(bodyID);
+        }
+        catch (...)
+        {
+            return JPH_INVALID_BODY_ID;
+        }
+    }
+
+    void JPH_BodyInterface_RemoveAndDestroyBody(JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID)
+            return;
+
+        JPH::BodyID nativeBodyID = ToBodyID(bodyID);
+        JPH::BodyInterface *nativeBodyInterface = ToBodyInterface(bodyInterface);
+        nativeBodyInterface->RemoveBody(nativeBodyID);
+        nativeBodyInterface->DestroyBody(nativeBodyID);
+    }
+
+    uint8_t JPH_BodyInterface_SetPositionAndRotation(JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID, JPH_Vec3 position, JPH_Quat rotation, JPH_Activation activation)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID)
+            return 0;
+
+        ToBodyInterface(bodyInterface)->SetPositionAndRotation(ToBodyID(bodyID), ToRVec3(position), ToQuat(rotation), ToActivation(activation));
+        return 1;
+    }
+
+    uint8_t JPH_BodyInterface_GetPositionAndRotation(const JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID, JPH_Vec3 *position, JPH_Quat *rotation)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID || position == nullptr || rotation == nullptr)
+            return 0;
+
+        JPH::RVec3 nativePosition;
+        JPH::Quat nativeRotation;
+        ToBodyInterface(bodyInterface)->GetPositionAndRotation(ToBodyID(bodyID), nativePosition, nativeRotation);
+        *position = FromRVec3(nativePosition);
+        *rotation = FromQuat(nativeRotation);
+        return 1;
+    }
+
+    uint8_t JPH_BodyInterface_SetLinearAndAngularVelocity(JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID, JPH_Vec3 linearVelocity, JPH_Vec3 angularVelocity)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID)
+            return 0;
+
+        JPH::BodyInterface *nativeBodyInterface = ToBodyInterface(bodyInterface);
+        JPH::BodyID nativeBodyID = ToBodyID(bodyID);
+        nativeBodyInterface->SetLinearVelocity(nativeBodyID, ToVec3(linearVelocity));
+        nativeBodyInterface->SetAngularVelocity(nativeBodyID, ToVec3(angularVelocity));
+        return 1;
+    }
+
+    uint8_t JPH_BodyInterface_GetLinearAndAngularVelocity(const JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID, JPH_Vec3 *linearVelocity, JPH_Vec3 *angularVelocity)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID || linearVelocity == nullptr || angularVelocity == nullptr)
+            return 0;
+
+        const JPH::BodyInterface *nativeBodyInterface = ToBodyInterface(bodyInterface);
+        JPH::BodyID nativeBodyID = ToBodyID(bodyID);
+        *linearVelocity = FromVec3(nativeBodyInterface->GetLinearVelocity(nativeBodyID));
+        *angularVelocity = FromVec3(nativeBodyInterface->GetAngularVelocity(nativeBodyID));
+        return 1;
+    }
+
+    uint8_t JPH_BodyInterface_IsAdded(const JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID)
+            return 0;
+
+        return ToBodyInterface(bodyInterface)->IsAdded(ToBodyID(bodyID)) ? 1 : 0;
     }
 
     uint8_t JPH_NarrowPhaseQuery_CastRay(const JPH_NarrowPhaseQuery *query, const JPH_RayCast *ray, JPH_RayCastResult *hit)
