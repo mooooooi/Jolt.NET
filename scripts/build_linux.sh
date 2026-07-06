@@ -22,15 +22,26 @@ BUILD_X64_DISTRIBUTION="$ROOT_DIR/build_linux_x64_Distribution"
 BUILD_X64_DEBUG="$ROOT_DIR/build_linux_x64_Debug"
 BUILD_ARM64_DISTRIBUTION="$ROOT_DIR/build_linux_arm64_Distribution"
 BUILD_ARM64_DEBUG="$ROOT_DIR/build_linux_arm64_Debug"
+BUILD_PARALLELISM="${JOLT_BUILD_PARALLELISM:-}"
+
+if [[ -z "$BUILD_PARALLELISM" ]]; then
+    if command -v nproc >/dev/null 2>&1; then
+        BUILD_PARALLELISM="$(nproc)"
+    else
+        BUILD_PARALLELISM=2
+    fi
+fi
 
 # --- linux-x64 Distribution ---
+echo "Jobs: $BUILD_PARALLELISM"
+echo ""
 echo "[1/4] Configure linux-x64 (Distribution)..."
 cmake -S "$NATIVE_DIR" -B "$BUILD_X64_DISTRIBUTION" -G Ninja \
     -DCMAKE_BUILD_TYPE=Distribution \
     -DCROSS_PLATFORM_DETERMINISTIC=ON
 
 echo "[1/4] Build linux-x64 (Distribution)..."
-cmake --build "$BUILD_X64_DISTRIBUTION" --config Distribution --verbose --parallel
+cmake --build "$BUILD_X64_DISTRIBUTION" --config Distribution --verbose --parallel "$BUILD_PARALLELISM"
 
 # --- linux-arm64 Distribution ---
 echo "[2/4] Configure linux-arm64 (Distribution)..."
@@ -43,7 +54,7 @@ cmake -S "$NATIVE_DIR" -B "$BUILD_ARM64_DISTRIBUTION" -G Ninja \
     -DCROSS_PLATFORM_DETERMINISTIC=ON
 
 echo "[2/4] Build linux-arm64 (Distribution)..."
-cmake --build "$BUILD_ARM64_DISTRIBUTION" --config Distribution --verbose --parallel
+cmake --build "$BUILD_ARM64_DISTRIBUTION" --config Distribution --verbose --parallel "$BUILD_PARALLELISM"
 
 # --- linux-x64 Debug ---
 echo "[3/4] Configure linux-x64 (Debug)..."
@@ -53,7 +64,7 @@ cmake -S "$NATIVE_DIR" -B "$BUILD_X64_DEBUG" -G Ninja \
     -DGENERATE_DEBUG_SYMBOLS=ON
 
 echo "[3/4] Build linux-x64 (Debug)..."
-cmake --build "$BUILD_X64_DEBUG" --config Debug --verbose --parallel
+cmake --build "$BUILD_X64_DEBUG" --config Debug --verbose --parallel "$BUILD_PARALLELISM"
 
 # --- linux-arm64 Debug ---
 echo "[4/4] Configure linux-arm64 (Debug)..."
@@ -67,7 +78,7 @@ cmake -S "$NATIVE_DIR" -B "$BUILD_ARM64_DEBUG" -G Ninja \
     -DGENERATE_DEBUG_SYMBOLS=ON
 
 echo "[4/4] Build linux-arm64 (Debug)..."
-cmake --build "$BUILD_ARM64_DEBUG" --config Debug --verbose --parallel
+cmake --build "$BUILD_ARM64_DEBUG" --config Debug --verbose --parallel "$BUILD_PARALLELISM"
 
 # --- Package ---
 echo "Packaging..."

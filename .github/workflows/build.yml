@@ -25,6 +25,16 @@ jobs:
       - name: Get CMake
         uses: lukka/get-cmake@v4.0.2
 
+      - name: Cache Windows build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            build_win_64
+            build_win_arm64
+          key: jolt-build-windows-${{ runner.os }}-${{ hashFiles('native/**', 'scripts/build_windows.bat', 'lib/JoltPhysics/Build/CMakeLists.txt', 'lib/JoltPhysics/Jolt/Jolt.cmake') }}
+          restore-keys: |
+            jolt-build-windows-${{ runner.os }}-
+
       - name: Build Windows libraries
         shell: cmd
         run: scripts\build_windows.bat
@@ -52,6 +62,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
+      - name: Cache Linux build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            build_linux_x64_Distribution
+            build_linux_x64_Debug
+            build_linux_arm64_Distribution
+            build_linux_arm64_Debug
+          key: jolt-build-linux-${{ runner.os }}-${{ hashFiles('native/**', 'scripts/build_linux.sh', 'lib/JoltPhysics/Build/CMakeLists.txt', 'lib/JoltPhysics/Jolt/Jolt.cmake') }}
+          restore-keys: |
+            jolt-build-linux-${{ runner.os }}-
+
       - name: Build Linux libraries
         run: bash scripts/build_linux.sh
 
@@ -72,6 +94,16 @@ jobs:
 
       - name: Get CMake
         uses: lukka/get-cmake@v4.0.2
+
+      - name: Cache macOS build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            build_osx_Distribution
+            build_osx_Debug
+          key: jolt-build-macos-${{ runner.os }}-${{ hashFiles('native/**', 'scripts/build_macos.sh', 'lib/JoltPhysics/Build/CMakeLists.txt', 'lib/JoltPhysics/Jolt/Jolt.cmake') }}
+          restore-keys: |
+            jolt-build-macos-${{ runner.os }}-
 
       - name: Build macOS libraries
         run: bash scripts/build_macos.sh

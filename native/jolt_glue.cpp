@@ -24,8 +24,8 @@ namespace
 {
     constexpr JPH::BroadPhaseLayer kDefaultBroadPhaseLayer(0);
     constexpr uint32_t kTempAllocatorBytes = 10 * 1024 * 1024;
-    constexpr uint kMaxPhysicsJobs = 2048;
-    constexpr uint kMaxPhysicsBarriers = 8;
+    constexpr JPH::uint kMaxPhysicsJobs = 2048;
+    constexpr JPH::uint kMaxPhysicsBarriers = 8;
 
     std::mutex gInitMutex;
     std::atomic_uint32_t gInitCount { 0 };
@@ -33,7 +33,7 @@ namespace
     class SingleBroadPhaseLayerInterface final : public JPH::BroadPhaseLayerInterface
     {
     public:
-        uint GetNumBroadPhaseLayers() const override
+        JPH::uint GetNumBroadPhaseLayers() const override
         {
             return 1;
         }
@@ -125,7 +125,7 @@ namespace
         bool mFailed = false;
     };
 
-    uint WorkerThreadCount()
+    JPH::uint WorkerThreadCount()
     {
         uint32_t hardware = std::thread::hardware_concurrency();
         if (hardware <= 1)

@@ -5,12 +5,19 @@ set SCRIPT_DIR=%~dp0
 set ROOT_DIR=%SCRIPT_DIR%..
 set NATIVE_DIR=%ROOT_DIR%\native
 set BIN_DIR=%ROOT_DIR%\bin
+if not defined JOLT_BUILD_PARALLELISM (
+    set BUILD_PARALLELISM=%NUMBER_OF_PROCESSORS%
+) else (
+    set BUILD_PARALLELISM=%JOLT_BUILD_PARALLELISM%
+)
+if "%BUILD_PARALLELISM%"=="" set BUILD_PARALLELISM=2
 
 echo ==========================================
 echo  Jolt.NET - Windows Build (x64 + ARM64)
 echo ==========================================
 echo Root:   %ROOT_DIR%
 echo Native: %NATIVE_DIR%
+echo Jobs:   %BUILD_PARALLELISM%
 echo.
 
 REM --- win-x64 Distribution ---
@@ -21,7 +28,7 @@ cmake -S "%NATIVE_DIR%" -B "%ROOT_DIR%\build_win_64" -G "Visual Studio 17 2022" 
 if errorlevel 1 goto :error
 
 echo [1/4] Build win-x64 (Distribution)...
-cmake --build "%ROOT_DIR%\build_win_64" --config Distribution
+cmake --build "%ROOT_DIR%\build_win_64" --config Distribution --parallel %BUILD_PARALLELISM%
 if errorlevel 1 goto :error
 
 REM --- win-arm64 Distribution ---
@@ -32,7 +39,7 @@ cmake -S "%NATIVE_DIR%" -B "%ROOT_DIR%\build_win_arm64" -G "Visual Studio 17 202
 if errorlevel 1 goto :error
 
 echo [2/4] Build win-arm64 (Distribution)...
-cmake --build "%ROOT_DIR%\build_win_arm64" --config Distribution
+cmake --build "%ROOT_DIR%\build_win_arm64" --config Distribution --parallel %BUILD_PARALLELISM%
 if errorlevel 1 goto :error
 
 REM --- win-x64 Debug ---
@@ -44,7 +51,7 @@ cmake -S "%NATIVE_DIR%" -B "%ROOT_DIR%\build_win_64" -G "Visual Studio 17 2022" 
 if errorlevel 1 goto :error
 
 echo [3/4] Build win-x64 (Debug)...
-cmake --build "%ROOT_DIR%\build_win_64" --config Debug
+cmake --build "%ROOT_DIR%\build_win_64" --config Debug --parallel %BUILD_PARALLELISM%
 if errorlevel 1 goto :error
 
 REM --- win-arm64 Debug ---
@@ -56,7 +63,7 @@ cmake -S "%NATIVE_DIR%" -B "%ROOT_DIR%\build_win_arm64" -G "Visual Studio 17 202
 if errorlevel 1 goto :error
 
 echo [4/4] Build win-arm64 (Debug)...
-cmake --build "%ROOT_DIR%\build_win_arm64" --config Debug
+cmake --build "%ROOT_DIR%\build_win_arm64" --config Debug --parallel %BUILD_PARALLELISM%
 if errorlevel 1 goto :error
 
 REM --- Package ---
