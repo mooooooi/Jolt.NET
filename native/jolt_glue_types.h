@@ -21,6 +21,7 @@ typedef struct JPH_PhysicsSystem JPH_PhysicsSystem;
 typedef struct JPH_BodyInterface JPH_BodyInterface;
 typedef struct JPH_NarrowPhaseQuery JPH_NarrowPhaseQuery;
 typedef struct JPH_Body JPH_Body;
+typedef struct JPH_Constraint JPH_Constraint;
 typedef struct JPH_Shape JPH_Shape;
 typedef struct JPH_PhysicsSystemState JPH_PhysicsSystemState;
 
@@ -49,6 +50,18 @@ typedef enum JPH_Activation
     JPH_Activation_Activate = 0,
     JPH_Activation_DontActivate = 1
 } JPH_Activation;
+
+typedef enum JPH_ConstraintKind
+{
+    JPH_ConstraintKind_Fixed = 1,
+    JPH_ConstraintKind_Distance = 2
+} JPH_ConstraintKind;
+
+typedef enum JPH_ConstraintSpace
+{
+    JPH_ConstraintSpace_LocalToBodyCOM = 0,
+    JPH_ConstraintSpace_WorldSpace = 1
+} JPH_ConstraintSpace;
 
 typedef struct JPH_Vec3
 {
@@ -96,6 +109,20 @@ typedef struct JPH_BodyCreationSettings
     float maxAngularVelocity;
     float gravityFactor;
 } JPH_BodyCreationSettings;
+
+typedef struct JPH_ConstraintCreationSettings
+{
+    uint8_t kind;
+    uint8_t enabled;
+    uint8_t space;
+    uint8_t autoDetectPoint;
+    uint32_t priority;
+    uint32_t numVelocityStepsOverride;
+    uint32_t numPositionStepsOverride;
+    float minDistance;
+    float maxDistance;
+    uint64_t userData;
+} JPH_ConstraintCreationSettings;
 
 #ifdef __cplusplus
 }

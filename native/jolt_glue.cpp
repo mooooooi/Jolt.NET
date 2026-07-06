@@ -19,6 +19,9 @@
 #include <Jolt/Physics/Body/MotionQuality.h>
 #include <Jolt/Physics/Body/MotionType.h>
 #include <Jolt/Physics/EActivation.h>
+#include <Jolt/Physics/Constraints/Constraint.h>
+#include <Jolt/Physics/Constraints/DistanceConstraint.h>
+#include <Jolt/Physics/Constraints/FixedConstraint.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/StateRecorder.h>
 
@@ -210,6 +213,37 @@ namespace
     JPH::EActivation ToActivation(JPH_Activation value)
     {
         return value == JPH_Activation_Activate ? JPH::EActivation::Activate : JPH::EActivation::DontActivate;
+    }
+
+    JPH::EConstraintSpace ToConstraintSpace(uint8_t value)
+    {
+        switch (static_cast<JPH_ConstraintSpace>(value))
+        {
+        case JPH_ConstraintSpace_LocalToBodyCOM:
+            return JPH::EConstraintSpace::LocalToBodyCOM;
+        case JPH_ConstraintSpace_WorldSpace:
+        default:
+            return JPH::EConstraintSpace::WorldSpace;
+        }
+    }
+
+    void ApplyConstraintSettings(JPH::ConstraintSettings &nativeSettings, const JPH_ConstraintCreationSettings &settings)
+    {
+        nativeSettings.mEnabled = settings.enabled != 0;
+        nativeSettings.mConstraintPriority = settings.priority;
+        nativeSettings.mNumVelocityStepsOverride = settings.numVelocityStepsOverride;
+        nativeSettings.mNumPositionStepsOverride = settings.numPositionStepsOverride;
+        nativeSettings.mUserData = settings.userData;
+    }
+
+    JPH_Constraint *FromConstraint(JPH::Constraint *constraint)
+    {
+        return reinterpret_cast<JPH_Constraint *>(constraint);
+    }
+
+    JPH::Constraint *ToConstraint(JPH_Constraint *constraint)
+    {
+        return reinterpret_cast<JPH::Constraint *>(constraint);
     }
 
     JPH::BodyID ToBodyID(JPH_BodyID value)
@@ -514,6 +548,64 @@ extern "C"
             return 0;
 
         return ToBodyInterface(bodyInterface)->IsAdded(ToBodyID(bodyID)) ? 1 : 0;
+    }
+
+    JPH_Constraint *JPH_PhysicsSystem_CreateAndAddConstraint(JPH_PhysicsSystem *system, JPH_BodyID bodyID1, JPH_BodyID bodyID2, const JPH_ConstraintCreationSettings *settings)
+    {
+        if (system == nullptr || settings == nullptr || bodyID1 == JPH_INVALID_BODY_ID || bodyID2 == JPH_INVALID_BODY_ID || bodyID1 == bodyID2)
+            return nullptr;
+
+        try
+        {
+            JPH::BodyInterface &bodyInterface = system->physicsSystem.GetBodyInterface();
+            JPH::BodyID nativeBodyID1 = ToBodyID(bodyID1);
+            JPH::BodyID nativeBodyID2 = ToBodyID(bodyID2);
+            JPH::TwoBodyConstraint *constraint = nullptr;
+
+            switch (static_cast<JPH_ConstraintKind>(settings->kind))
+            {
+            case JPH_ConstraintKind_Fixed:
+            {
+                JPH::FixedConstraintSettings nativeSettings;
+                ApplyConstraintSettings(nativeSettings, *settings);
+                nativeSettings.mSpace = ToConstraintSpace(settings->space);
+                nativeSettings.mAutoDetectPoint = settings->autoDetectPoint != 0;
+                constraint = bodyInterface.CreateConstraint(&nativeSettings, nativeBodyID1, nativeBodyID2);
+                break;
+            }
+            case JPH_ConstraintKind_Distance:
+            {
+                JPH::DistanceConstraintSettings nativeSettings;
+                ApplyConstraintSettings(nativeSettings, *settings);
+                nativeSettings.mSpace = ToConstraintSpace(settings->space);
+                nativeSettings.mMinDistance = settings->minDistance;
+                nativeSettings.mMaxDistance = settings->maxDistance;
+                constraint = bodyInterface.CreateConstraint(&nativeSettings, nativeBodyID1, nativeBodyID2);
+                break;
+            }
+            default:
+                return nullptr;
+            }
+
+            if (constraint == nullptr)
+                return nullptr;
+
+            system->physicsSystem.AddConstraint(constraint);
+            return FromConstraint(constraint);
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
+    uint8_t JPH_PhysicsSystem_RemoveAndDestroyConstraint(JPH_PhysicsSystem *system, JPH_Constraint *constraint)
+    {
+        if (system == nullptr || constraint == nullptr)
+            return 0;
+
+        system->physicsSystem.RemoveConstraint(ToConstraint(constraint));
+        return 1;
     }
 
     uint8_t JPH_NarrowPhaseQuery_CastRay(const JPH_NarrowPhaseQuery *query, const JPH_RayCast *ray, JPH_RayCastResult *hit)

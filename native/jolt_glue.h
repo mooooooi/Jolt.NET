@@ -54,6 +54,13 @@ JPH_CAPI uint8_t JPH_BodyInterface_GetLinearAndAngularVelocity(
     JPH_Vec3* angularVelocity);
 JPH_CAPI uint8_t JPH_BodyInterface_IsAdded(const JPH_BodyInterface* bodyInterface, JPH_BodyID bodyID);
 
+JPH_CAPI JPH_Constraint* JPH_PhysicsSystem_CreateAndAddConstraint(
+    JPH_PhysicsSystem* system,
+    JPH_BodyID bodyID1,
+    JPH_BodyID bodyID2,
+    const JPH_ConstraintCreationSettings* settings);
+JPH_CAPI uint8_t JPH_PhysicsSystem_RemoveAndDestroyConstraint(JPH_PhysicsSystem* system, JPH_Constraint* constraint);
+
 JPH_CAPI uint8_t JPH_NarrowPhaseQuery_CastRay(
     const JPH_NarrowPhaseQuery* query,
     const JPH_RayCast* ray,
