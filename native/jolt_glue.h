@@ -65,6 +65,11 @@ JPH_CAPI uint8_t JPH_NarrowPhaseQuery_CastRay(
     const JPH_NarrowPhaseQuery* query,
     const JPH_RayCast* ray,
     JPH_RayCastResult* hit);
+JPH_CAPI uint32_t JPH_NarrowPhaseQuery_CastRayAll(
+    const JPH_NarrowPhaseQuery* query,
+    const JPH_RayCast* ray,
+    JPH_RayCastResult* hits,
+    uint32_t maxHits);
 
 JPH_CAPI JPH_PhysicsSystemState* JPH_PhysicsSystem_SaveAlignedState(JPH_PhysicsSystem* system);
 JPH_CAPI uint8_t JPH_PhysicsSystem_RestoreAlignedState(JPH_PhysicsSystem* system, const JPH_PhysicsSystemState* state);

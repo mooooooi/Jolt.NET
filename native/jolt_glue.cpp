@@ -7,6 +7,7 @@
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
 #include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/ObjectLayer.h>
 #include <Jolt/Physics/Collision/NarrowPhaseQuery.h>
 #include <Jolt/Physics/Collision/RayCast.h>
@@ -254,6 +255,13 @@ namespace
     JPH_BodyID FromBodyID(const JPH::BodyID &value)
     {
         return value.GetIndexAndSequenceNumber();
+    }
+
+    void WriteRayCastResult(JPH_RayCastResult &destination, const JPH::RayCastResult &source)
+    {
+        destination.bodyID = FromBodyID(source.mBodyID);
+        destination.fraction = source.mFraction;
+        destination.subShapeID2 = source.mSubShapeID2.GetValue();
     }
 
     JPH::BodyInterface *ToBodyInterface(JPH_BodyInterface *bodyInterface)
@@ -624,9 +632,44 @@ extern "C"
         if (!nativeQuery->CastRay(nativeRay, nativeHit))
             return 0;
 
-        hit->bodyID = nativeHit.mBodyID.GetIndexAndSequenceNumber();
-        hit->fraction = nativeHit.mFraction;
+        WriteRayCastResult(*hit, nativeHit);
         return 1;
+    }
+
+    uint32_t JPH_NarrowPhaseQuery_CastRayAll(
+        const JPH_NarrowPhaseQuery *query,
+        const JPH_RayCast *ray,
+        JPH_RayCastResult *hits,
+        uint32_t maxHits)
+    {
+        if (query == nullptr || ray == nullptr || (hits == nullptr && maxHits > 0))
+            return 0;
+
+        try
+        {
+            const JPH::NarrowPhaseQuery *nativeQuery = reinterpret_cast<const JPH::NarrowPhaseQuery *>(query);
+            JPH::RRayCast nativeRay(
+                JPH::RVec3(ray->origin.x, ray->origin.y, ray->origin.z),
+                JPH::Vec3(ray->direction.x, ray->direction.y, ray->direction.z));
+
+            JPH::AllHitCollisionCollector<JPH::CastRayCollector> collector;
+            nativeQuery->CastRay(nativeRay, JPH::RayCastSettings(), collector);
+            collector.Sort();
+
+            uint32_t totalCount = static_cast<uint32_t>(collector.mHits.size());
+            if (hits == nullptr || maxHits == 0)
+                return totalCount;
+
+            uint32_t count = static_cast<uint32_t>(std::min<size_t>(collector.mHits.size(), maxHits));
+            for (uint32_t i = 0; i < count; ++i)
+                WriteRayCastResult(hits[i], collector.mHits[i]);
+
+            return count;
+        }
+        catch (...)
+        {
+            return 0;
+        }
     }
 
     JPH_PhysicsSystemState *JPH_PhysicsSystem_SaveAlignedState(JPH_PhysicsSystem *system)

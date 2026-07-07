@@ -88,6 +88,7 @@ typedef struct JPH_RayCastResult
 {
     JPH_BodyID bodyID;
     float fraction;
+    uint32_t subShapeID2;
 } JPH_RayCastResult;
 
 typedef struct JPH_BodyCreationSettings
