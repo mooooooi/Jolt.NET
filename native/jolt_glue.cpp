@@ -620,6 +620,54 @@ extern "C"
         return 1;
     }
 
+    void JPH_BodyInterface_AddForce(JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID, const JPH_Vec3 *force)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID || force == nullptr)
+            return;
+
+        ToBodyInterface(bodyInterface)->AddForce(ToBodyID(bodyID), ToVec3(*force), JPH::EActivation::Activate);
+    }
+
+    void JPH_BodyInterface_AddTorque(JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID, const JPH_Vec3 *torque)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID || torque == nullptr)
+            return;
+
+        ToBodyInterface(bodyInterface)->AddTorque(ToBodyID(bodyID), ToVec3(*torque), JPH::EActivation::Activate);
+    }
+
+    void JPH_BodyInterface_AddForceAndTorque(JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID, const JPH_Vec3 *force, const JPH_Vec3 *torque)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID || force == nullptr || torque == nullptr)
+            return;
+
+        ToBodyInterface(bodyInterface)->AddForceAndTorque(ToBodyID(bodyID), ToVec3(*force), ToVec3(*torque), JPH::EActivation::Activate);
+    }
+
+    void JPH_BodyInterface_AddImpulse(JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID, const JPH_Vec3 *impulse)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID || impulse == nullptr)
+            return;
+
+        ToBodyInterface(bodyInterface)->AddImpulse(ToBodyID(bodyID), ToVec3(*impulse));
+    }
+
+    void JPH_BodyInterface_ActivateBody(JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID)
+            return;
+
+        ToBodyInterface(bodyInterface)->ActivateBody(ToBodyID(bodyID));
+    }
+
+    void JPH_BodyInterface_DeactivateBody(JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID)
+            return;
+
+        ToBodyInterface(bodyInterface)->DeactivateBody(ToBodyID(bodyID));
+    }
+
     uint8_t JPH_BodyInterface_IsAdded(const JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID)
     {
         if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID)

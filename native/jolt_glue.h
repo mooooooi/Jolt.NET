@@ -52,6 +52,25 @@ JPH_CAPI uint8_t JPH_BodyInterface_GetLinearAndAngularVelocity(
     JPH_BodyID bodyID,
     JPH_Vec3* linearVelocity,
     JPH_Vec3* angularVelocity);
+JPH_CAPI void JPH_BodyInterface_AddForce(
+    JPH_BodyInterface* bodyInterface,
+    JPH_BodyID bodyID,
+    const JPH_Vec3* force);
+JPH_CAPI void JPH_BodyInterface_AddTorque(
+    JPH_BodyInterface* bodyInterface,
+    JPH_BodyID bodyID,
+    const JPH_Vec3* torque);
+JPH_CAPI void JPH_BodyInterface_AddForceAndTorque(
+    JPH_BodyInterface* bodyInterface,
+    JPH_BodyID bodyID,
+    const JPH_Vec3* force,
+    const JPH_Vec3* torque);
+JPH_CAPI void JPH_BodyInterface_AddImpulse(
+    JPH_BodyInterface* bodyInterface,
+    JPH_BodyID bodyID,
+    const JPH_Vec3* impulse);
+JPH_CAPI void JPH_BodyInterface_ActivateBody(JPH_BodyInterface* bodyInterface, JPH_BodyID bodyID);
+JPH_CAPI void JPH_BodyInterface_DeactivateBody(JPH_BodyInterface* bodyInterface, JPH_BodyID bodyID);
 JPH_CAPI uint8_t JPH_BodyInterface_IsAdded(const JPH_BodyInterface* bodyInterface, JPH_BodyID bodyID);
 JPH_CAPI JPH_BodyID JPH_Body_GetID(const JPH_Body* body);
 
