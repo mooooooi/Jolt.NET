@@ -53,6 +53,15 @@ JPH_CAPI uint8_t JPH_BodyInterface_GetLinearAndAngularVelocity(
     JPH_Vec3* linearVelocity,
     JPH_Vec3* angularVelocity);
 JPH_CAPI uint8_t JPH_BodyInterface_IsAdded(const JPH_BodyInterface* bodyInterface, JPH_BodyID bodyID);
+JPH_CAPI JPH_BodyID JPH_Body_GetID(const JPH_Body* body);
+
+JPH_CAPI void JPH_ObjectLayerFilter_SetProcs(const JPH_ObjectLayerFilter_Procs* procs);
+JPH_CAPI JPH_ObjectLayerFilter* JPH_ObjectLayerFilter_Create(void* userData);
+JPH_CAPI void JPH_ObjectLayerFilter_Destroy(JPH_ObjectLayerFilter* filter);
+
+JPH_CAPI void JPH_BodyFilter_SetProcs(const JPH_BodyFilter_Procs* procs);
+JPH_CAPI JPH_BodyFilter* JPH_BodyFilter_Create(void* userData);
+JPH_CAPI void JPH_BodyFilter_Destroy(JPH_BodyFilter* filter);
 
 JPH_CAPI JPH_Constraint* JPH_PhysicsSystem_CreateAndAddConstraint(
     JPH_PhysicsSystem* system,
@@ -65,6 +74,12 @@ JPH_CAPI uint8_t JPH_NarrowPhaseQuery_CastRay(
     const JPH_NarrowPhaseQuery* query,
     const JPH_RayCast* ray,
     JPH_RayCastResult* hit);
+JPH_CAPI uint8_t JPH_NarrowPhaseQuery_CastRayFiltered(
+    const JPH_NarrowPhaseQuery* query,
+    const JPH_RayCast* ray,
+    JPH_RayCastResult* hit,
+    const JPH_ObjectLayerFilter* objectLayerFilter,
+    const JPH_BodyFilter* bodyFilter);
 JPH_CAPI uint32_t JPH_NarrowPhaseQuery_CastRayAll(
     const JPH_NarrowPhaseQuery* query,
     const JPH_RayCast* ray,

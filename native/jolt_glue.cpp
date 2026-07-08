@@ -14,7 +14,9 @@
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Body/Body.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Body/BodyFilter.h>
 #include <Jolt/Physics/Body/BodyID.h>
 #include <Jolt/Physics/Body/BodyInterface.h>
 #include <Jolt/Physics/Body/MotionQuality.h>
@@ -81,6 +83,62 @@ namespace
             return true;
         }
     };
+
+    class ManagedObjectLayerFilter final : public JPH::ObjectLayerFilter
+    {
+    public:
+        static const JPH_ObjectLayerFilter_Procs *sProcs;
+
+        explicit ManagedObjectLayerFilter(void *userData)
+            : mUserData(userData)
+        {
+        }
+
+        bool ShouldCollide(JPH::ObjectLayer objectLayer) const override
+        {
+            if (sProcs != nullptr && sProcs->ShouldCollide != nullptr)
+                return sProcs->ShouldCollide(mUserData, static_cast<uint32_t>(objectLayer)) != 0;
+
+            return true;
+        }
+
+    private:
+        void *mUserData;
+    };
+
+    const JPH_ObjectLayerFilter_Procs *ManagedObjectLayerFilter::sProcs = nullptr;
+
+    class ManagedBodyFilter final : public JPH::BodyFilter
+    {
+    public:
+        static const JPH_BodyFilter_Procs *sProcs;
+
+        explicit ManagedBodyFilter(void *userData)
+            : mUserData(userData)
+        {
+        }
+
+        bool ShouldCollide(const JPH::BodyID &bodyID) const override
+        {
+            if (sProcs != nullptr && sProcs->ShouldCollide != nullptr)
+                return sProcs->ShouldCollide(mUserData, bodyID.GetIndexAndSequenceNumber()) != 0;
+
+            return true;
+        }
+
+        bool ShouldCollideLocked(const JPH::Body &body) const override
+        {
+            if (sProcs != nullptr && sProcs->ShouldCollideLocked != nullptr)
+                return sProcs->ShouldCollideLocked(mUserData, reinterpret_cast<const JPH_Body *>(&body)) != 0;
+
+            return true;
+        }
+
+    private:
+        void *mUserData;
+    };
+
+    const JPH_BodyFilter_Procs *ManagedBodyFilter::sProcs = nullptr;
 
     class VectorStateRecorder final : public JPH::StateRecorder
     {
@@ -277,6 +335,18 @@ namespace
     const JPH::Shape *ToShape(const JPH_Shape *shape)
     {
         return reinterpret_cast<const JPH::Shape *>(shape);
+    }
+
+    const JPH::ObjectLayerFilter &ToObjectLayerFilter(const JPH_ObjectLayerFilter *filter)
+    {
+        static const JPH::ObjectLayerFilter defaultFilter = {};
+        return filter != nullptr ? *reinterpret_cast<const JPH::ObjectLayerFilter *>(filter) : defaultFilter;
+    }
+
+    const JPH::BodyFilter &ToBodyFilter(const JPH_BodyFilter *filter)
+    {
+        static const JPH::BodyFilter defaultFilter = {};
+        return filter != nullptr ? *reinterpret_cast<const JPH::BodyFilter *>(filter) : defaultFilter;
     }
 }
 
@@ -558,6 +628,58 @@ extern "C"
         return ToBodyInterface(bodyInterface)->IsAdded(ToBodyID(bodyID)) ? 1 : 0;
     }
 
+    JPH_BodyID JPH_Body_GetID(const JPH_Body *body)
+    {
+        if (body == nullptr)
+            return JPH_INVALID_BODY_ID;
+
+        return reinterpret_cast<const JPH::Body *>(body)->GetID().GetIndexAndSequenceNumber();
+    }
+
+    void JPH_ObjectLayerFilter_SetProcs(const JPH_ObjectLayerFilter_Procs *procs)
+    {
+        ManagedObjectLayerFilter::sProcs = procs;
+    }
+
+    JPH_ObjectLayerFilter *JPH_ObjectLayerFilter_Create(void *userData)
+    {
+        try
+        {
+            return reinterpret_cast<JPH_ObjectLayerFilter *>(new ManagedObjectLayerFilter(userData));
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
+    void JPH_ObjectLayerFilter_Destroy(JPH_ObjectLayerFilter *filter)
+    {
+        delete reinterpret_cast<ManagedObjectLayerFilter *>(filter);
+    }
+
+    void JPH_BodyFilter_SetProcs(const JPH_BodyFilter_Procs *procs)
+    {
+        ManagedBodyFilter::sProcs = procs;
+    }
+
+    JPH_BodyFilter *JPH_BodyFilter_Create(void *userData)
+    {
+        try
+        {
+            return reinterpret_cast<JPH_BodyFilter *>(new ManagedBodyFilter(userData));
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
+    void JPH_BodyFilter_Destroy(JPH_BodyFilter *filter)
+    {
+        delete reinterpret_cast<ManagedBodyFilter *>(filter);
+    }
+
     JPH_Constraint *JPH_PhysicsSystem_CreateAndAddConstraint(JPH_PhysicsSystem *system, JPH_BodyID bodyID1, JPH_BodyID bodyID2, const JPH_ConstraintCreationSettings *settings)
     {
         if (system == nullptr || settings == nullptr || bodyID1 == JPH_INVALID_BODY_ID || bodyID2 == JPH_INVALID_BODY_ID || bodyID1 == bodyID2)
@@ -630,6 +752,31 @@ extern "C"
         nativeHit.mFraction = hit->fraction > 0.0f ? hit->fraction : 1.0f;
 
         if (!nativeQuery->CastRay(nativeRay, nativeHit))
+            return 0;
+
+        WriteRayCastResult(*hit, nativeHit);
+        return 1;
+    }
+
+    uint8_t JPH_NarrowPhaseQuery_CastRayFiltered(
+        const JPH_NarrowPhaseQuery *query,
+        const JPH_RayCast *ray,
+        JPH_RayCastResult *hit,
+        const JPH_ObjectLayerFilter *objectLayerFilter,
+        const JPH_BodyFilter *bodyFilter)
+    {
+        if (query == nullptr || ray == nullptr || hit == nullptr)
+            return 0;
+
+        const JPH::NarrowPhaseQuery *nativeQuery = reinterpret_cast<const JPH::NarrowPhaseQuery *>(query);
+        JPH::RRayCast nativeRay(
+            JPH::RVec3(ray->origin.x, ray->origin.y, ray->origin.z),
+            JPH::Vec3(ray->direction.x, ray->direction.y, ray->direction.z));
+
+        JPH::RayCastResult nativeHit;
+        nativeHit.mFraction = hit->fraction > 0.0f ? hit->fraction : 1.0f;
+
+        if (!nativeQuery->CastRay(nativeRay, nativeHit, {}, ToObjectLayerFilter(objectLayerFilter), ToBodyFilter(bodyFilter)))
             return 0;
 
         WriteRayCastResult(*hit, nativeHit);

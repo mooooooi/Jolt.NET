@@ -21,6 +21,8 @@ typedef struct JPH_PhysicsSystem JPH_PhysicsSystem;
 typedef struct JPH_BodyInterface JPH_BodyInterface;
 typedef struct JPH_NarrowPhaseQuery JPH_NarrowPhaseQuery;
 typedef struct JPH_Body JPH_Body;
+typedef struct JPH_ObjectLayerFilter JPH_ObjectLayerFilter;
+typedef struct JPH_BodyFilter JPH_BodyFilter;
 typedef struct JPH_Constraint JPH_Constraint;
 typedef struct JPH_Shape JPH_Shape;
 typedef struct JPH_PhysicsSystemState JPH_PhysicsSystemState;
@@ -90,6 +92,17 @@ typedef struct JPH_RayCastResult
     float fraction;
     uint32_t subShapeID2;
 } JPH_RayCastResult;
+
+typedef struct JPH_ObjectLayerFilter_Procs
+{
+    uint8_t (*ShouldCollide)(void* userData, uint32_t objectLayer);
+} JPH_ObjectLayerFilter_Procs;
+
+typedef struct JPH_BodyFilter_Procs
+{
+    uint8_t (*ShouldCollide)(void* userData, JPH_BodyID bodyID);
+    uint8_t (*ShouldCollideLocked)(void* userData, const JPH_Body* body);
+} JPH_BodyFilter_Procs;
 
 typedef struct JPH_BodyCreationSettings
 {
