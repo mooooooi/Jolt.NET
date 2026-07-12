@@ -26,8 +26,17 @@ typedef struct JPH_BodyFilter JPH_BodyFilter;
 typedef struct JPH_Constraint JPH_Constraint;
 typedef struct JPH_Shape JPH_Shape;
 typedef struct JPH_PhysicsSystemState JPH_PhysicsSystemState;
+typedef struct JPH_CharacterVirtual JPH_CharacterVirtual;
 
 typedef uint32_t JPH_BodyID;
+
+typedef enum JPH_CharacterGroundState
+{
+    JPH_CharacterGroundState_OnGround = 0,
+    JPH_CharacterGroundState_OnSteepGround = 1,
+    JPH_CharacterGroundState_NotSupported = 2,
+    JPH_CharacterGroundState_InAir = 3
+} JPH_CharacterGroundState;
 
 enum
 {
@@ -137,6 +146,48 @@ typedef struct JPH_ConstraintCreationSettings
     float maxDistance;
     uint64_t userData;
 } JPH_ConstraintCreationSettings;
+
+typedef struct JPH_CharacterVirtualCreationSettings
+{
+    const JPH_Shape* shape;
+    JPH_Vec3 up;
+    JPH_Vec3 shapeOffset;
+    float supportingVolumeConstant;
+    float maxSlopeAngle;
+    float mass;
+    float maxStrength;
+    float predictiveContactDistance;
+    uint32_t maxCollisionIterations;
+    uint32_t maxConstraintIterations;
+    float minTimeRemaining;
+    float collisionTolerance;
+    float characterPadding;
+    uint32_t maxNumHits;
+    float hitReductionCosMaxAngle;
+    float penetrationRecoverySpeed;
+    uint32_t characterID;
+    uint64_t userData;
+} JPH_CharacterVirtualCreationSettings;
+
+typedef struct JPH_CharacterVirtualState
+{
+    JPH_Vec3 position;
+    JPH_Quat rotation;
+    JPH_Vec3 linearVelocity;
+    JPH_Vec3 groundNormal;
+    JPH_Vec3 groundVelocity;
+    JPH_CharacterGroundState groundState;
+} JPH_CharacterVirtualState;
+
+typedef struct JPH_CharacterVirtualUpdateSettings
+{
+    JPH_Vec3 stickToFloorStepDown;
+    JPH_Vec3 walkStairsStepUp;
+    float walkStairsMinStepForward;
+    float walkStairsStepForwardTest;
+    float walkStairsCosAngleForwardContact;
+    JPH_Vec3 walkStairsStepDownExtra;
+} JPH_CharacterVirtualUpdateSettings;
 
 #ifdef __cplusplus
 }

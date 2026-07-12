@@ -26,6 +26,25 @@ JPH_CAPI JPH_Shape* JPH_Shape_CreateCapsule(float halfHeightOfCylinder, float ra
 JPH_CAPI void JPH_Shape_AddRef(const JPH_Shape* shape);
 JPH_CAPI void JPH_Shape_Release(const JPH_Shape* shape);
 
+JPH_CAPI JPH_CharacterVirtual* JPH_CharacterVirtual_Create(
+    JPH_PhysicsSystem* system,
+    const JPH_CharacterVirtualCreationSettings* settings,
+    const JPH_CharacterVirtualState* state);
+JPH_CAPI void JPH_CharacterVirtual_Destroy(JPH_CharacterVirtual* character);
+JPH_CAPI uint8_t JPH_CharacterVirtual_SetState(
+    JPH_CharacterVirtual* character,
+    const JPH_CharacterVirtualState* state,
+    uint8_t resetContacts);
+JPH_CAPI uint8_t JPH_CharacterVirtual_GetState(
+    const JPH_CharacterVirtual* character,
+    JPH_CharacterVirtualState* state);
+JPH_CAPI uint8_t JPH_CharacterVirtual_ExtendedUpdate(
+    JPH_CharacterVirtual* character,
+    float deltaTime,
+    JPH_Vec3 gravity,
+    const JPH_CharacterVirtualUpdateSettings* settings,
+    uint64_t collisionLayerMask);
+
 JPH_CAPI JPH_BodyID JPH_BodyInterface_CreateAndAddBody(
     JPH_BodyInterface* bodyInterface,
     const JPH_BodyCreationSettings* settings,

@@ -14,6 +14,7 @@
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Body/Body.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyFilter.h>
@@ -82,6 +83,24 @@ namespace
         {
             return true;
         }
+    };
+
+    class MaskObjectLayerFilter final : public JPH::ObjectLayerFilter
+    {
+    public:
+        explicit MaskObjectLayerFilter(uint64_t mask)
+            : mMask(mask)
+        {
+        }
+
+        bool ShouldCollide(JPH::ObjectLayer layer) const override
+        {
+            const uint32_t bit = static_cast<uint32_t>(layer);
+            return bit < 64 && (mMask & (uint64_t { 1 } << bit)) != 0;
+        }
+
+    private:
+        uint64_t mMask;
     };
 
     class ManagedObjectLayerFilter final : public JPH::ObjectLayerFilter
@@ -379,6 +398,12 @@ struct JPH_PhysicsSystemState
     std::vector<uint8_t> data;
 };
 
+struct JPH_CharacterVirtual
+{
+    JPH::Ref<JPH::CharacterVirtual> character;
+    JPH_PhysicsSystem *system = nullptr;
+};
+
 extern "C"
 {
     void JPH_Init(void)
@@ -526,6 +551,136 @@ extern "C"
     {
         if (shape != nullptr)
             ToShape(shape)->Release();
+    }
+
+    JPH_CharacterVirtual *JPH_CharacterVirtual_Create(
+        JPH_PhysicsSystem *system,
+        const JPH_CharacterVirtualCreationSettings *settings,
+        const JPH_CharacterVirtualState *state)
+    {
+        if (system == nullptr || settings == nullptr || state == nullptr || settings->shape == nullptr)
+            return nullptr;
+
+        try
+        {
+            JPH::CharacterVirtualSettings nativeSettings;
+            nativeSettings.mShape = ToShape(settings->shape);
+            nativeSettings.mUp = ToVec3(settings->up).NormalizedOr(JPH::Vec3::sAxisY());
+            nativeSettings.mShapeOffset = ToVec3(settings->shapeOffset);
+            nativeSettings.mSupportingVolume = JPH::Plane(nativeSettings.mUp, settings->supportingVolumeConstant);
+            nativeSettings.mMaxSlopeAngle = settings->maxSlopeAngle;
+            nativeSettings.mMass = settings->mass;
+            nativeSettings.mMaxStrength = settings->maxStrength;
+            nativeSettings.mPredictiveContactDistance = settings->predictiveContactDistance;
+            nativeSettings.mMaxCollisionIterations = settings->maxCollisionIterations;
+            nativeSettings.mMaxConstraintIterations = settings->maxConstraintIterations;
+            nativeSettings.mMinTimeRemaining = settings->minTimeRemaining;
+            nativeSettings.mCollisionTolerance = settings->collisionTolerance;
+            nativeSettings.mCharacterPadding = settings->characterPadding;
+            nativeSettings.mMaxNumHits = settings->maxNumHits;
+            nativeSettings.mHitReductionCosMaxAngle = settings->hitReductionCosMaxAngle;
+            nativeSettings.mPenetrationRecoverySpeed = settings->penetrationRecoverySpeed;
+            nativeSettings.mID = JPH::CharacterID(settings->characterID);
+
+            auto result = new JPH_CharacterVirtual();
+            result->system = system;
+            result->character = new JPH::CharacterVirtual(
+                &nativeSettings,
+                ToRVec3(state->position),
+                ToQuat(state->rotation),
+                settings->userData,
+                &system->physicsSystem);
+            result->character->SynchronizeState(
+                ToRVec3(state->position),
+                ToQuat(state->rotation),
+                ToVec3(state->linearVelocity),
+                ToVec3(state->groundNormal),
+                ToVec3(state->groundVelocity),
+                static_cast<JPH::CharacterBase::EGroundState>(state->groundState),
+                true);
+            return result;
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
+    void JPH_CharacterVirtual_Destroy(JPH_CharacterVirtual *character)
+    {
+        delete character;
+    }
+
+    uint8_t JPH_CharacterVirtual_SetState(
+        JPH_CharacterVirtual *character,
+        const JPH_CharacterVirtualState *state,
+        uint8_t resetContacts)
+    {
+        if (character == nullptr || character->character == nullptr || state == nullptr)
+            return 0;
+
+        character->character->SynchronizeState(
+            ToRVec3(state->position),
+            ToQuat(state->rotation),
+            ToVec3(state->linearVelocity),
+            ToVec3(state->groundNormal),
+            ToVec3(state->groundVelocity),
+            static_cast<JPH::CharacterBase::EGroundState>(state->groundState),
+            resetContacts != 0);
+        return 1;
+    }
+
+    uint8_t JPH_CharacterVirtual_GetState(
+        const JPH_CharacterVirtual *character,
+        JPH_CharacterVirtualState *state)
+    {
+        if (character == nullptr || character->character == nullptr || state == nullptr)
+            return 0;
+
+        const JPH::CharacterVirtual &native = *character->character;
+        state->position = FromRVec3(native.GetPosition());
+        state->rotation = FromQuat(native.GetRotation());
+        state->linearVelocity = FromVec3(native.GetLinearVelocity());
+        state->groundNormal = FromVec3(native.GetGroundNormal());
+        state->groundVelocity = FromVec3(native.GetGroundVelocity());
+        state->groundState = static_cast<JPH_CharacterGroundState>(native.GetGroundState());
+        return 1;
+    }
+
+    uint8_t JPH_CharacterVirtual_ExtendedUpdate(
+        JPH_CharacterVirtual *character,
+        float deltaTime,
+        JPH_Vec3 gravity,
+        const JPH_CharacterVirtualUpdateSettings *settings,
+        uint64_t collisionLayerMask)
+    {
+        if (character == nullptr || character->character == nullptr || character->system == nullptr ||
+            settings == nullptr || deltaTime < 0.0f)
+        {
+            return 0;
+        }
+
+        JPH::CharacterVirtual::ExtendedUpdateSettings nativeSettings;
+        nativeSettings.mStickToFloorStepDown = ToVec3(settings->stickToFloorStepDown);
+        nativeSettings.mWalkStairsStepUp = ToVec3(settings->walkStairsStepUp);
+        nativeSettings.mWalkStairsMinStepForward = settings->walkStairsMinStepForward;
+        nativeSettings.mWalkStairsStepForwardTest = settings->walkStairsStepForwardTest;
+        nativeSettings.mWalkStairsCosAngleForwardContact = settings->walkStairsCosAngleForwardContact;
+        nativeSettings.mWalkStairsStepDownExtra = ToVec3(settings->walkStairsStepDownExtra);
+
+        MaskObjectLayerFilter objectLayerFilter(collisionLayerMask);
+        const JPH::BodyFilter bodyFilter;
+        const JPH::ShapeFilter shapeFilter;
+        character->character->ExtendedUpdate(
+            deltaTime,
+            ToVec3(gravity),
+            nativeSettings,
+            character->system->physicsSystem.GetDefaultBroadPhaseLayerFilter(0),
+            objectLayerFilter,
+            bodyFilter,
+            shapeFilter,
+            character->system->tempAllocator);
+        return 1;
     }
 
     JPH_BodyID JPH_BodyInterface_CreateAndAddBody(JPH_BodyInterface *bodyInterface, const JPH_BodyCreationSettings *settings, JPH_Activation activation)
