@@ -13,6 +13,8 @@
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/PlaneShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Body/Body.h>
@@ -541,6 +543,54 @@ extern "C"
         }
     }
 
+    JPH_Shape *JPH_Shape_CreateCylinder(float halfHeight, float radius, float convexRadius)
+    {
+        if (halfHeight <= 0.0f || radius <= 0.0f || convexRadius < 0.0f)
+            return nullptr;
+
+        try
+        {
+            JPH::CylinderShapeSettings settings(halfHeight, radius, convexRadius);
+            JPH::ShapeSettings::ShapeResult result = settings.Create();
+            if (result.HasError())
+                return nullptr;
+
+            JPH::RefConst<JPH::Shape> shape = result.Get();
+            shape->AddRef();
+            return reinterpret_cast<JPH_Shape *>(const_cast<JPH::Shape *>(shape.GetPtr()));
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
+    JPH_Shape *JPH_Shape_CreatePlane(JPH_Vec3 normal, float distance, float halfExtent)
+    {
+        if (halfExtent <= 0.0f)
+            return nullptr;
+
+        try
+        {
+            JPH::Vec3 plane_normal = ToVec3(normal);
+            if (plane_normal.IsNearZero())
+                return nullptr;
+
+            JPH::PlaneShapeSettings settings(JPH::Plane(plane_normal.Normalized(), distance), nullptr, halfExtent);
+            JPH::ShapeSettings::ShapeResult result = settings.Create();
+            if (result.HasError())
+                return nullptr;
+
+            JPH::RefConst<JPH::Shape> shape = result.Get();
+            shape->AddRef();
+            return reinterpret_cast<JPH_Shape *>(const_cast<JPH::Shape *>(shape.GetPtr()));
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
     void JPH_Shape_AddRef(const JPH_Shape *shape)
     {
         if (shape != nullptr)
@@ -821,6 +871,14 @@ extern "C"
             return;
 
         ToBodyInterface(bodyInterface)->DeactivateBody(ToBodyID(bodyID));
+    }
+
+    uint8_t JPH_BodyInterface_IsActive(const JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID)
+    {
+        if (bodyInterface == nullptr || bodyID == JPH_INVALID_BODY_ID)
+            return 0;
+
+        return ToBodyInterface(bodyInterface)->IsActive(ToBodyID(bodyID)) ? 1 : 0;
     }
 
     uint8_t JPH_BodyInterface_IsAdded(const JPH_BodyInterface *bodyInterface, JPH_BodyID bodyID)

@@ -23,6 +23,8 @@ JPH_CAPI JPH_NarrowPhaseQuery* JPH_PhysicsSystem_GetNarrowPhaseQueryNoLock(JPH_P
 JPH_CAPI JPH_Shape* JPH_Shape_CreateSphere(float radius);
 JPH_CAPI JPH_Shape* JPH_Shape_CreateBox(JPH_Vec3 halfExtent, float convexRadius);
 JPH_CAPI JPH_Shape* JPH_Shape_CreateCapsule(float halfHeightOfCylinder, float radius);
+JPH_CAPI JPH_Shape* JPH_Shape_CreateCylinder(float halfHeight, float radius, float convexRadius);
+JPH_CAPI JPH_Shape* JPH_Shape_CreatePlane(JPH_Vec3 normal, float distance, float halfExtent);
 JPH_CAPI void JPH_Shape_AddRef(const JPH_Shape* shape);
 JPH_CAPI void JPH_Shape_Release(const JPH_Shape* shape);
 
@@ -90,6 +92,7 @@ JPH_CAPI void JPH_BodyInterface_AddImpulse(
     const JPH_Vec3* impulse);
 JPH_CAPI void JPH_BodyInterface_ActivateBody(JPH_BodyInterface* bodyInterface, JPH_BodyID bodyID);
 JPH_CAPI void JPH_BodyInterface_DeactivateBody(JPH_BodyInterface* bodyInterface, JPH_BodyID bodyID);
+JPH_CAPI uint8_t JPH_BodyInterface_IsActive(const JPH_BodyInterface* bodyInterface, JPH_BodyID bodyID);
 JPH_CAPI uint8_t JPH_BodyInterface_IsAdded(const JPH_BodyInterface* bodyInterface, JPH_BodyID bodyID);
 JPH_CAPI JPH_BodyID JPH_Body_GetID(const JPH_Body* body);
 
